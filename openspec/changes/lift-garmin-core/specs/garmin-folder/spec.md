@@ -18,7 +18,8 @@ either is left out, `webusb-mtp`'s default applies.
 Connecting SHALL claim the watch's MTP interface, open a session and return a connection to the
 folder named `GARMIN` (any case) at the root of the first storage, in the watch's order, that has
 one: the storage, its free space, the watch's model, and every object directly in that folder,
-folders included, with the `.img` files (any case, not folders) listed apart.
+folders included, with the `.img` files (any case, not folders) listed apart. When GetDeviceInfo is
+refused or reports no model, the model SHALL be `Garmin watch`.
 
 #### Scenario: Watch with a GARMIN folder
 - **WHEN** a watch's storage root holds `Music` and `GARMIN`, and `GARMIN` holds `trail.img`, a folder `Courses` and `device.fit`
@@ -31,6 +32,10 @@ folders included, with the `.img` files (any case, not folders) listed apart.
 #### Scenario: Model unknown
 - **WHEN** the watch refuses GetDeviceInfo
 - **THEN** connecting still succeeds, and the model is `Garmin watch`
+
+#### Scenario: No model reported
+- **WHEN** GetDeviceInfo answers with an empty model
+- **THEN** the model is `Garmin watch`
 
 ### Requirement: A watch without a GARMIN folder is refused
 When no storage root holds a `GARMIN` folder, connecting SHALL fail with kind `no-garmin-folder`,
