@@ -25,6 +25,8 @@ job SHALL run only when started on `main`. No push, pull request, tag or schedul
 The publish job SHALL run in the GitHub environment `npm`, whose required reviewer is the owner, so
 a started release publishes only after the owner approves it in GitHub. The trusted publisher on
 npm SHALL name that environment.
+The wait comes from the environment's settings in GitHub, which the repository's tests can't see;
+owner task 4.0 checks them.
 
 #### Scenario: Release started by someone else
 - **WHEN** a collaborator or an app with Actions access starts the release on `main`
