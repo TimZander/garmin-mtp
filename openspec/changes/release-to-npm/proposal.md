@@ -38,6 +38,9 @@ None.
 - `package.json` loses `"private": true`: from the merge on, `npm publish` from any checkout would
   publish. The release workflow is the intended route.
 - The owner has made the `npm` environment and the `NPM_TOKEN` secret. After the first publish they
-  add trusted publishing on npmjs.com and delete the token.
+  add trusted publishing on npmjs.com and delete the token. It is the same token `webusb-mtp` holds
+  as its `NPM_TOKEN` secret, kept there until this first publish; deleting it there too moves
+  `webusb-mtp` onto trusted publishing alone, whose first run without the token checks open
+  question 0 in both repositories.
 - Not in scope: version bumps, changelogs, git tags or GitHub releases; a workflow shared with
   `webusb-mtp` through ci-recipes.

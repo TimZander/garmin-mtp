@@ -14,7 +14,8 @@ in the `npm` environment, first publish with a token, later ones with trusted pu
 checks before publishing; provenance.
 
 **Non-Goals:** automatic releases, version bumps, changelogs, git tags, GitHub releases; sharing the
-workflow with `webusb-mtp`.
+workflow with `webusb-mtp`; prerelease versions (`1.2.3-beta.1`): the release always publishes to
+`latest`, so a prerelease bump is a mistake for the version's pull request to catch.
 
 ## Decisions
 
@@ -55,11 +56,15 @@ workflow with `webusb-mtp`.
    `NODE_AUTH_TOKEN` (from memory), and an empty secret leaves an empty token in `.npmrc`; neither
    library has released without the token yet. *Assumption:* yes; the second release, after the
    token is deleted, checks it (task 4.2).
-1. **Require the owner's approval before publishing?** *Assumption:* yes, as in `webusb-mtp`, where
-   the owner answered it (its ADR 0013); the owner has created the `npm` environment here, which
-   the assumption rests on. It is recorded as an assumption until the owner confirms it for this
-   repository.
+1. **Require the owner's approval before publishing?** **Answered (owner, 2026-11-09): yes, as in
+   `webusb-mtp`** (ADR 0009). The spec's "A publish waits for the owner's approval" rests on it.
 2. **Share the workflow through ci-recipes?** *Assumption:* not now, as `webusb-mtp`'s ADR 0011
    recommends (still `proposed` there): revisit once both libraries have released.
 3. **Tag the released commit from the workflow?** *Assumption:* not now; it needs `contents:
    write`.
+4. **Node version for releases.** *Assumption:* 22, as CI and `webusb-mtp`'s release; the spec's
+   "Nothing is published unless the checks pass" names it.
+
+Requirements that rest on an assumption above: "The release authenticates with trusted publishing
+or the token" (question 0) and the Node version in "Nothing is published unless the checks pass"
+(question 4).

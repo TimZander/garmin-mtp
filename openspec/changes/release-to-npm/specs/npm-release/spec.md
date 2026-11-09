@@ -10,7 +10,7 @@ The release workflow SHALL run only when started by hand (`workflow_dispatch`), 
 job SHALL run only when started on `main`. No push, pull request, tag or schedule SHALL start it.
 
 #### Scenario: Started on main
-- **WHEN** the owner runs the release workflow from the Actions tab on `main`
+- **WHEN** the owner runs the release workflow from the Actions tab on `main`, the checks pass and the owner approves
 - **THEN** the publish job runs
 
 #### Scenario: Started on another branch
@@ -34,9 +34,13 @@ npm SHALL name that environment.
 - **WHEN** the workflow file is read by the repository's tests
 - **THEN** the publish job's environment is `npm`, and the check job has none
 
+#### Scenario: Trusted publisher set up
+- **WHEN** the owner adds the trusted publisher on npmjs.com, as the README's "Releasing" section says
+- **THEN** npm's trusted publisher for `garmin-mtp` names the repository `TimZander/garmin-mtp`, the workflow `release.yml` and the environment `npm`
+
 ### Requirement: Nothing is published unless the checks pass
 A check job SHALL install from the lock file and run the type check, the tests and the build as
-steps of their own. The publish job SHALL need the check job, and no job or step SHALL continue on
+steps of their own, on Node 22 as CI does. The publish job SHALL need the check job, and no job or step SHALL continue on
 error or run regardless of an earlier failure, so a failing check publishes nothing.
 
 #### Scenario: A test fails
@@ -45,16 +49,16 @@ error or run regardless of an earlier failure, so a failing check publishes noth
 
 #### Scenario: Workflow file checked for failure handling
 - **WHEN** the workflow file is read by the repository's tests
-- **THEN** the publish job needs the check job, and no job or step has `continue-on-error` or an `if:` with `always()`, `failure()` or `cancelled()`
+- **THEN** both jobs set up Node 22, the publish job needs the check job, and no job or step has `continue-on-error` or an `if:` with `always()`, `failure()` or `cancelled()`
 
 ### Requirement: The version in package.json is published publicly with provenance
 The release SHALL publish the version `package.json` holds, built by the check job's build, with public
-access and an npm provenance statement linking it to the workflow run. It SHALL never force a
+access, under npm's `latest` tag, and an npm provenance statement linking it to the workflow run. It SHALL never force a
 publish or unpublish, so a version npm already holds fails the release.
 
 #### Scenario: New version
 - **WHEN** `package.json` says `1.2.3`, npm has no `1.2.3`, and the checks pass
-- **THEN** `garmin-mtp@1.2.3` is public on npm with a provenance statement for that run
+- **THEN** `garmin-mtp@1.2.3` is public on npm as `latest`, with a provenance statement for that run
 
 #### Scenario: Version already published
 - **WHEN** `package.json` says `1.2.3` and npm already has `1.2.3`
@@ -72,6 +76,8 @@ release's `npm publish` publishes it rather than refusing.
 The release SHALL publish to `https://registry.npmjs.org` with an exact npm version that supports
 trusted publishing (11.5.1 or later), using trusted publishing when the package has this repository's
 release workflow as its trusted publisher, and otherwise the `NPM_TOKEN` repository secret.
+That trusted publishing needs no change once the secret is deleted rests on open question 0 of
+this change's design, which the second release checks.
 
 #### Scenario: First publish
 - **WHEN** the package doesn't exist on npm yet and `NPM_TOKEN` holds a token that may publish
@@ -83,8 +89,8 @@ release workflow as its trusted publisher, and otherwise the `NPM_TOKEN` reposit
 
 ### Requirement: The release's reach is kept small
 The workflow SHALL grant `contents: read` only, and the publish job alone `id-token: write`. The
-publish job SHALL run no project code: it takes the check job's build, and its only commands are
-installing the exact npm and publishing. Every action SHALL be pinned to a full commit SHA, checkouts keep no credentials, nothing is
+publish job SHALL run no project code: it checks the repository out, takes the check job's `dist`,
+and its only commands are installing the exact npm and publishing. Every action SHALL be pinned to a full commit SHA, checkouts keep no credentials, nothing is
 cached, and `NPM_TOKEN` reaches only the publish step, which runs no package scripts.
 
 #### Scenario: Workflow file checked
@@ -108,6 +114,10 @@ the one waiting, never the one running.
 - **WHEN** the owner starts a release while another is running
 - **THEN** the second waits until the first has finished
 
+#### Scenario: A job hangs
+- **WHEN** a step of either job hangs
+- **THEN** GitHub stops that job after 15 minutes and the release fails
+
 ### Requirement: Releasing is documented
 The README SHALL install the package from npm, and SHALL say how a release is made: bump the
 version in a pull request, merge it, run the release workflow on `main` and approve it; and how the first
@@ -115,4 +125,4 @@ publish's token gives way to trusted publishing. No line of it SHALL say the pac
 
 #### Scenario: README read
 - **WHEN** someone reads the README
-- **THEN** its "Install" section's step is `npm install garmin-mtp`, no line says the package isn't on npm, and its "Releasing" section names the version bump, the workflow to run on `main`, the approval in the `npm` environment, the `NPM_TOKEN` secret for the first publish, and trusted publishing after it
+- **THEN** its "Install" section's step is `npm install garmin-mtp`, no line says the package is "not published", "not yet published", "unpublished" or "not on npm", and its "Releasing" section names the version bump, the workflow to run on `main`, the approval in the `npm` environment, the `NPM_TOKEN` secret for the first publish, and trusted publishing after it
