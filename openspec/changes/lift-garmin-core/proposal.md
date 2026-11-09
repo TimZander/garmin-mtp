@@ -16,7 +16,8 @@ file's headers without fetching the whole file. Lifting that layer into `garmin-
   - the IMG header reader: family id, description, map records' area names, mkgmap and GMP
     markers, all within a 64 KiB read budget; and the map origin rule (protected or made with
     mkgmap).
-- One API change: the app's own build marker leaves the library. Whether a map is "made with
+- Two small exports, `GARMIN_VENDOR_ID` and `isGarminDevice`, and one API change: the app's own
+  build marker leaves the library. Whether a map is "made with
   this app" becomes "every map record carries a marker the caller names".
 - Add their tests, with the app's two IMG fixtures and a copy of `webusb-mtp`'s fake USB device.
 - Package it like `webusb-mtp` (ES module build with declarations, not published) and add CI.

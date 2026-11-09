@@ -37,8 +37,9 @@ read throws, header reading SHALL return a result saying why instead of throwing
 
 ### Requirement: The family id comes from TYP, then MPS
 The family id SHALL be the u16 at `0x2F` of a TYP subfile whose header says `GARMIN TYP`, else the
-family id of the first map (`L`) or family (`F`) record of the first MPS subfile, else unknown with
-a reason. Reading the family id alone SHALL try each TYP in turn; the header info only the first.
+family id (the u16 after the product id) of the first map (`L`) or family (`F`) record of the first
+MPS subfile, read within its first `0x200` bytes for the family id alone, else unknown with a
+reason. Reading the family id alone SHALL try each TYP in turn; the header info only the first.
 A TYP family found before the budget runs out SHALL be kept.
 
 #### Scenario: mkgmap map
@@ -67,7 +68,8 @@ outruns the budget.
 - **THEN** its description is `Marked Map`
 
 ### Requirement: The header info says how the map was made
-The header info SHALL give the area name of every map record in the first MPS subfile, whether
+The header info SHALL give the area name of every map record in the first MPS subfile (the third
+NUL-separated string after the record's 8 bytes of product, family and map number), whether
 an MPS subfile is named `MAKEGMAP`, whether any subfile is `GMP`, and whether the whole directory
 was read. When the map records can't all be read, the area names SHALL be empty.
 

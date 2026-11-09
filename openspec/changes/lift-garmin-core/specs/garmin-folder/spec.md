@@ -82,8 +82,9 @@ connecting SHALL fail with kind `no-session`.
 ### Requirement: Failures are errors with a kind
 Every failure SHALL be an error with one of the kinds `garmin-mode`, `no-interface`, `setup`,
 `setup-timeout`, `no-session`, `no-garmin-folder`, `response`, `broken`, `timeout` or `mismatch`.
-An error from an MTP operation SHALL give the operation's code, and a `response` the response
-code. A failure while connecting SHALL release the watch, whatever its kind.
+Errors of kind `response`, `broken` and `timeout` SHALL give the code of the operation being run
+(OpenSession for the whole reopen), and a `response` the response code. A failure while connecting
+SHALL release whatever was opened.
 
 #### Scenario: Operation times out while connecting
 - **WHEN** the watch doesn't answer GetStorageIDs within the timeout
@@ -125,7 +126,7 @@ announcement was answered, or an announcement that timed out or broke, SHALL be 
 possibly leaving a partial file.
 
 #### Scenario: Announcement refused
-- **WHEN** SendObjectInfo is answered `0x200C`
+- **WHEN** SendObjectInfo is answered `0x200C` after the watch accepted its file information
 - **THEN** sending fails with kind `response`, not marked as leaving a partial file, and the session isn't broken
 
 #### Scenario: Transfer breaks
@@ -202,9 +203,14 @@ GetDeviceInfo returns it, before any later line.
 - **THEN** neither appears in the log
 
 ### Requirement: Connecting and sending log their steps
-The log SHALL also get, as diagnostics: the model; the `GARMIN` folder found, with its object count
-and free space; each send's announcement; the file information sent with SendObjectInfo, as hex;
-what the watch accepted; and the name and size read back.
+The log SHALL also get, as diagnostics: the model, when GetDeviceInfo answers; the `GARMIN` folder,
+with its object count and free space; each send's announcement; the file information sent, as
+hex; what the watch accepted; the name and size read back; and `webusb-mtp`'s notes (an early
+answer, and the device's status and the cancel after a write gets no answer).
+
+#### Scenario: A write gets no answer
+- **WHEN** the watch doesn't answer SendObjectInfo within the write timeout
+- **THEN** before the timeout is reported, the log has the device's MTP status and the cancel request
 
 #### Scenario: A send's diagnostics
 - **WHEN** a 10-byte file `a.img` is sent
@@ -212,7 +218,8 @@ what the watch accepted; and the name and size read back.
 
 ### Requirement: Map files are read through their headers only
 The connection SHALL read a map file's family id or header info through partial reads of that
-file, as `img-headers` defines, never fetching the whole file, and never throwing.
+file, as `img-headers` defines, never fetching the whole file, and never throwing. A partial read
+that times out or breaks SHALL still close the device, as any operation does.
 
 #### Scenario: Header info of a map on the watch
 - **WHEN** `GARMIN` holds an mkgmap map with family id 4242 and its header info is read
