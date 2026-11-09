@@ -84,6 +84,11 @@ describe('connectWatch', () => {
     expect(conn.garmin.handle).toBe(2)
   })
 
+  it('uses the model "Garmin watch" when GetDeviceInfo reports none', async () => {
+    const { conn } = await connected({ model: '' })
+    expect(conn.model).toBe('Garmin watch')
+  })
+
   it('fails with no-garmin-folder, creating nothing, and releases the watch', async () => {
     const { fake } = setup({ objects: [{ handle: 1, storageId: S1, parent: ROOT, name: 'Music', folder: true }] })
     const err = await fail(connectWatch(fake.device, new TestLog(), {}))
@@ -323,6 +328,28 @@ describe('deleteFile, readFreeSpace and closeWatch', () => {
     expect(conn.freeBytes).toBe(4_000_000)
   })
 
+  it('closes the device when an answer after connecting cannot be decoded (broken)', async () => {
+    let corrupt = false
+    const { fake, conn } = await connected({ corruptData: (op) => corrupt && op === 0x1005 })
+    corrupt = true
+    const err = await fail(readFreeSpace(conn))
+    expect(err.kind).toBe('broken')
+    expect(fake.opened).toBe(false)
+    const count = fake.sentOperations.length
+    await closeWatch(conn)
+    expect(fake.sentOperations.length).toBe(count)
+  })
+
+  it("closes the device when a send's read-back cannot be decoded (broken)", async () => {
+    let corrupt = false
+    const { fake, conn } = await connected({ corruptData: (op) => corrupt && op === 0x1008 })
+    corrupt = true
+    const err = await fail(sendMap(conn, 'new.img', new Uint8Array(10), () => {}))
+    expect(err.kind).toBe('broken')
+    expect(err.partialFile).toBe(true)
+    expect(fake.opened).toBe(false)
+  })
+
   it('closes the session and releases the device, leaving no event read pending', async () => {
     const { fake, conn } = await connected()
     await closeWatch(conn)
@@ -384,9 +411,18 @@ describe('readFamilyId and readMapInfo', () => {
     expect(mapOrigin(info, file, conn.files, FIXTURE_MARKER)).toBe('marked')
   })
 
-  it('reports a file it cannot read as unknown, without throwing', async () => {
-    const { conn } = await connected()
-    expect(await readFamilyId(conn, conn.imgFiles[0])).toEqual({ unknown: expect.any(String) })
+  it('reports a refused header read as unknown with a reason, without throwing', async () => {
+    const { fake, conn } = await connected({ failWith: (op) => (op === 0x101b ? 0x2002 : undefined) })
+    expect(await readFamilyId(conn, conn.imgFiles[0])).toEqual({ unknown: expect.stringMatching(/GetPartialObject/) })
+    expect((await readMapInfo(conn, conn.imgFiles[0])).family).toEqual({ unknown: expect.stringMatching(/GetPartialObject/) })
+    expect(fake.opened).toBe(true)
+  })
+
+  it('reports a header read that times out as unknown, and the device is closed', async () => {
+    const s = setup({ hangOn: (op) => op === 0x101b })
+    const conn = await connectWatch(s.fake.device, s.log, { timeoutMs: 20 })
+    expect(await readFamilyId(conn, conn.imgFiles[0])).toEqual({ unknown: expect.stringMatching(/GetPartialObject/) })
+    expect(s.fake.opened).toBe(false)
   })
 })
 

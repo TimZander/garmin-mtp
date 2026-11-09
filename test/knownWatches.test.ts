@@ -114,11 +114,12 @@ describe('knownWatches', () => {
     expect(usb.requestDevice).toHaveBeenCalledTimes(1)
   })
 
-  it('a closed chooser rejects and adds nothing', async () => {
-    const { usb } = fakeUsb([])
+  it('a closed chooser rejects and leaves the list unchanged', async () => {
+    const a = dev(0x091e)
+    const { usb } = fakeUsb([a])
     const w = createKnownWatches(usb)
     await w.ready
     await expect(w.choose()).rejects.toThrow()
-    expect(w.list()).toEqual([])
+    expect(w.list()).toEqual([a])
   })
 })
