@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "pins": {
+    "garmin-folder": {
+      "Connecting finds the GARMIN folder": null,
+      "A watch without a GARMIN folder is refused": null,
+      "Connecting reports why it couldn't start": null,
+      "A session left open by another app is reopened": null,
+      "Failures are errors with a kind": null,
+      "A file is sent into GARMIN and verified": null,
+      "A failed send says whether a partial file may be left": null,
+      "The library deletes only what it is asked to": null,
+      "Free space can be read again": null,
+      "The watch is released on close and on failure": null,
+      "Events are read and logged while connected": null,
+      "Operations are logged without serial numbers": null,
+      "Map files are read through their headers only": null
+    },
+    "img-headers": {
+      "Headers are read within a budget": null,
+      "Header reading never throws": null,
+      "The family id comes from TYP, then MPS": null,
+      "The header description is read": null,
+      "The header info says how the map was made": null,
+      "A marker is matched on every map record": null,
+      "Only maps made with mkgmap may be deleted": null
+    },
+    "watch-choice": {
+      "Garmin devices are recognised by vendor id": null,
+      "Garmin mode is recognised": null,
+      "Known watches start from the allowed devices": null,
+      "Known watches follow plugging in and out": null,
+      "One known watch is picked without the chooser": null,
+      "A watch can always be chosen": null,
+      "A watch that failed to open can be forgotten": null
+    }
+  }
+}
