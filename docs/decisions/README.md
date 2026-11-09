@@ -16,3 +16,4 @@ one. A superseded record stays, with its status set to `superseded by NNNN`.
 | [0008](0008-package-name-garmin-mtp.md) | The npm package is `garmin-mtp`, unscoped | accepted |
 | [0009](0009-release-like-webusb-mtp.md) | Release with a copy of webusb-mtp's workflow, approved by the owner | accepted |
 | [0010](0010-how-release-to-npm-was-run.md) | How release-to-npm was reviewed | accepted |
+| [0011](0011-trusted-publisher-may-publish.md) | The trusted publisher may publish, not only stage | accepted |
