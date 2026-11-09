@@ -96,6 +96,8 @@ export interface FakeDeviceOptions {
   initialSessionOpen?: boolean
   // Objects created by SendObject report this many bytes more (or fewer) than they received.
   reportedSizeDelta?: number
+  // Objects created by SendObject report this name instead of the one they were sent with.
+  reportedName?: (name: string) => string
   // Stop accepting a data-out phase after this many bytes (the transfer hangs until close).
   stallDataAfterBytes?: number
   // Delay every bulk OUT write of a data-out phase by this many milliseconds.
@@ -452,6 +454,7 @@ export function createFakeMtpDevice(options: FakeDeviceOptions = {}): FakeMtpDev
     }
     const created: FakeObject = { ...pendingObject, data: payload }
     if (options.reportedSizeDelta) created.size = payload.length + options.reportedSizeDelta
+    if (options.reportedName) created.name = options.reportedName(created.name)
     objects.push(created)
     pendingObject = null
     respond(ResponseCode.OK, tid)

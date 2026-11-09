@@ -58,6 +58,7 @@ describe('connectWatch', () => {
     expect(conn.garmin).toEqual({ handle: 2, name: 'GARMIN' })
     expect(conn.files.map((f) => f.name)).toEqual(['trail.img', 'Courses', 'device.fit'])
     expect(conn.imgFiles).toEqual([expect.objectContaining({ handle: 3, name: 'trail.img', size: 339_968 })])
+    expect(text()).toMatch(/Opened the device[\s\S]*Claimed interface/)
     expect(text()).toMatch(/Model: Watch 3/)
     expect(text()).toMatch(/GARMIN folder on storage 0x10001: 3 objects; 6,676,971,520 bytes free/)
   })
@@ -78,6 +79,20 @@ describe('connectWatch', () => {
     expect(conn.garmin.name).toBe('Garmin')
   })
 
+  it('takes only a folder named GARMIN, and lists only .img files (any case) as map files', async () => {
+    const { conn } = await connected({
+      objects: [
+        { handle: 1, storageId: S1, parent: ROOT, name: 'GARMIN', size: 10 },
+        { handle: 2, storageId: S1, parent: ROOT, name: 'Garmin', folder: true },
+        { handle: 3, storageId: S1, parent: 2, name: 'TRAIL.IMG', size: 100 },
+        { handle: 4, storageId: S1, parent: 2, name: 'old.img', folder: true },
+      ],
+    })
+    expect(conn.garmin).toEqual({ handle: 2, name: 'Garmin' })
+    expect(conn.imgFiles.map((f) => f.name)).toEqual(['TRAIL.IMG'])
+    expect(conn.files.map((f) => f.name)).toEqual(['TRAIL.IMG', 'old.img'])
+  })
+
   it('still connects when GetDeviceInfo is refused, with the model "Garmin watch"', async () => {
     const { conn } = await connected({ failWith: (op) => (op === 0x1001 ? 0x2005 : undefined) })
     expect(conn.model).toBe('Garmin watch')
@@ -91,9 +106,11 @@ describe('connectWatch', () => {
 
   it('fails with no-garmin-folder, creating nothing, and releases the watch', async () => {
     const { fake } = setup({ objects: [{ handle: 1, storageId: S1, parent: ROOT, name: 'Music', folder: true }] })
-    const err = await fail(connectWatch(fake.device, new TestLog(), {}))
+    const log = new TestLog()
+    const err = await fail(connectWatch(fake.device, log, {}))
     expect(err).toBeInstanceOf(WatchError)
     expect(err.kind).toBe('no-garmin-folder')
+    expect(log.text()).toMatch(/No storage on the watch has a GARMIN folder/)
     expect(fake.sentOperations).not.toContain(0x100c)
     expect(fake.sentOperations.slice(-1)[0]).toBe(0x1003)
     expect(fake.opened).toBe(false)
@@ -105,6 +122,11 @@ describe('connectWatch', () => {
     expect(err.kind).toBe('garmin-mode')
     expect(fake.setupCalls).toEqual([])
     expect(fake.sentOperations).toEqual([])
+  })
+
+  it('treats product 0x0003 as Garmin mode only on a Garmin device', async () => {
+    const { conn } = await connected({ vendorId: 0x1234, productId: 0x0003 })
+    expect(conn.garmin.handle).toBe(2)
   })
 
   it('fails with no-interface, opening nothing, when there is no MTP interface', async () => {
@@ -187,6 +209,18 @@ describe('connectWatch', () => {
     expect(fake.opened).toBe(false)
   })
 
+  it('reports a timeout during the reopen as OpenSession, and closes the device', async () => {
+    let opens = 0
+    const { fake } = setup({
+      hangOn: (op) => op === 0x1002 && ++opens === 2,
+      failWith: (op) => (op === 0x1002 && opens === 1 ? 0x201e : undefined),
+    })
+    const err = await fail(connectWatch(fake.device, new TestLog(), { timeoutMs: 20 }))
+    expect(err.kind).toBe('timeout')
+    expect(err.details.operation).toBe(0x1002)
+    expect(fake.opened).toBe(false)
+  })
+
   it('reports a refusal while connecting with its codes, and closes the device', async () => {
     const { fake } = setup({ failWith: (op) => (op === 0x1004 ? 0x2002 : undefined) })
     const err = await fail(connectWatch(fake.device, new TestLog(), {}))
@@ -249,6 +283,17 @@ describe('sendMap', () => {
     expect(err.kind).toBe('mismatch')
     expect(err.message).toMatch(/1,000 bytes.*999 bytes/)
     expect(err.partialFile).toBe(true)
+    expect(conn.session.broken).toBe(false)
+  })
+
+  it('reports a name read back that differs as a mismatch, and keeps the connection usable', async () => {
+    const { fake, conn } = await connected({ reportedName: (n) => n.toUpperCase() })
+    const err = await fail(sendMap(conn, 'trail.img', map(10), () => {}))
+    expect(err.kind).toBe('mismatch')
+    expect(err.partialFile).toBe(true)
+    expect(conn.session.broken).toBe(false)
+    expect(fake.opened).toBe(true)
+    expect(await readFreeSpace(conn)).toBeGreaterThan(0)
   })
 
   it('reports a refused SendObjectInfo without a partial file, and keeps the session usable', async () => {
