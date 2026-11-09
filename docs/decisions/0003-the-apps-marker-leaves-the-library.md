@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-11-09
 decision-makers: the owner
 ---
@@ -8,8 +8,8 @@ decision-makers: the owner
 ## Context and Problem Statement
 
 The app tells its own maps apart by an area name it writes into every map record, and its
-`isBuiltByApp(info)` compared with that value. A library can't know an app's marker. This is open
-question 2 in `lift-garmin-core`'s design, unanswered; the change proceeds on the assumption below.
+`isBuiltByApp(info)` compared with that value. A library can't know an app's marker. This was open
+question 2 in `lift-garmin-core`'s design; the owner accepted the assumption below.
 
 ## Considered Options
 

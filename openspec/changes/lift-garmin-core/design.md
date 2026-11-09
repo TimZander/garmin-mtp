@@ -76,7 +76,10 @@ the app's dialogs, messages, names and builds.
    path alias, now that `webusb-mtp` 0.1.0 is published (ADR 0001).
 2. **Renaming the origin `'app'` to `'marked'`, with the marker passed in.** *Assumption:* yes;
    the library knows no app, and the app passes `maps.timzander.com` when it switches.
+   *Answered by the owner:* yes, as assumed (ADR 0003).
 3. **Error messages keep the app's wording** (for example "so the map wasn't sent" for a missing
    `GARMIN` folder). *Assumption:* keep them word for word for now, so the switch changes nothing
-   the user reads; a later change can make them neutral.
+   the user reads; a later change can make them neutral. *Answered by the owner:* keep them, as
+   assumed (ADR 0007).
 4. **Package name on npm.** *Assumption:* `garmin-mtp`, unscoped, matching the repository.
+   *Answered by the owner:* yes, as assumed (ADR 0008).
