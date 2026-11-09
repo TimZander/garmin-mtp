@@ -25,6 +25,10 @@ refused or reports no model, the model SHALL be `Garmin watch`.
 - **WHEN** a watch's storage root holds `Music` and `GARMIN`, and `GARMIN` holds `trail.img`, a folder `Courses` and `device.fit`
 - **THEN** the connection names that `GARMIN` folder and the storage's free space, lists all three objects, and lists only `trail.img` as a map file
 
+#### Scenario: Only folders and .img files count
+- **WHEN** a storage root holds a file named `GARMIN` and a folder `Garmin`, and that folder holds `TRAIL.IMG` and a folder `old.img`
+- **THEN** the connection uses the folder, and lists `TRAIL.IMG` as a map file but not `old.img`
+
 #### Scenario: Second storage has the folder
 - **WHEN** the first storage's root has no `GARMIN` folder and the second's has one named `Garmin`
 - **THEN** the connection uses the second storage, its free space and its `Garmin` folder
@@ -95,6 +99,10 @@ SHALL release whatever was opened.
 - **WHEN** the watch doesn't answer GetStorageIDs within the timeout
 - **THEN** connecting fails with kind `timeout`, a message naming GetStorageIDs, and the device is closed
 
+#### Scenario: Times out during the reopen
+- **WHEN** the first OpenSession is answered `0x201E` and the watch doesn't answer the second within the timeout
+- **THEN** connecting fails with kind `timeout`, operation `0x1002`, and the device is closed
+
 #### Scenario: Refused while connecting
 - **WHEN** GetStorageIDs is answered `0x2002`
 - **THEN** connecting fails with kind `response`, operation `0x1004`, response code `0x2002`, and the device is closed
@@ -102,7 +110,7 @@ SHALL release whatever was opened.
 ### Requirement: What a failure leaves of the connection
 After connecting, a `response` SHALL leave the connection usable, except a write the watch
 answered before taking its data, which closes the device. `broken` and `timeout` SHALL mean the
-device was closed.
+device was closed. A `mismatch` SHALL leave the connection usable.
 
 #### Scenario: Refused delete
 - **WHEN** DeleteObject is answered `0x200D`
@@ -120,6 +128,10 @@ from 0 to 1, read the new object's info back, and return it only when its name a
 #### Scenario: Sent and verified
 - **WHEN** a 150,000-byte file is sent as `trail.img` at 25 October 2026, 17:30:05 local time
 - **THEN** the watch holds those bytes as `trail.img` in `GARMIN`, its dates are `20261025T173005`, the last progress is 1, and the result names `trail.img` with 150,000 bytes
+
+#### Scenario: Name read back differs
+- **WHEN** after sending `trail.img` the watch reports the file as `TRAIL.IMG`
+- **THEN** sending fails with kind `mismatch`, marked as possibly leaving a partial file
 
 #### Scenario: Size read back differs
 - **WHEN** after a 1,000-byte send the watch reports the file with 999 bytes
@@ -208,10 +220,11 @@ GetDeviceInfo returns it, before any later line.
 - **THEN** neither appears in the log
 
 ### Requirement: Connecting and sending log their steps
-The log SHALL also get, as diagnostics: the model, when GetDeviceInfo answers; the `GARMIN` folder,
-with its object count and free space; each send's announcement; the file information sent, as
-hex; what the watch accepted; the name and size read back; and `webusb-mtp`'s notes (an early
-answer, and the device's status and the cancel after a write gets no answer).
+The log SHALL also get, as diagnostics: each USB setup step; why connecting failed; the model,
+when GetDeviceInfo answers; the `GARMIN` folder, with its object count and free space; each send's
+announcement; the file information sent, as hex; what the watch accepted; the name and size read
+back; and `webusb-mtp`'s notes (an early answer, and the device's status and the cancel after a
+write gets no answer).
 
 #### Scenario: A write gets no answer
 - **WHEN** the watch doesn't answer SendObjectInfo within the write timeout
