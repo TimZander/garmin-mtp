@@ -177,7 +177,8 @@ export async function readImgInfo(readAt: ReadAt, budget = HEADER_READ_BUDGET): 
       }
     }
   } catch (e) {
-    // Map records that can't all be read can't prove the marker.
+    // Map records that can't all be read can't prove the marker. (The body is read whole, so
+    // today nothing has been pushed yet; this keeps the rule if the read is ever split.)
     info.mapAreas = []
     if (!('familyId' in info.family)) info.family = { unknown: reason(e) }
   }
