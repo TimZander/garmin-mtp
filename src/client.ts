@@ -128,6 +128,19 @@ function toWatchError(e: unknown, code: number, partialFile = false): WatchError
   })
 }
 
+// After connecting: turn a failure into a WatchError and throw it. `broken` and `timeout` mean
+// the device is closed; an error that didn't come from the transfer itself (an answer that won't
+// decode) leaves the session open, so the device is closed here.
+async function fail(conn: WatchConnection, e: unknown, code: number, partialFile = false): Promise<never> {
+  const err = toWatchError(e, code, partialFile)
+  if (err.kind === 'broken' || err.kind === 'timeout') {
+    conn.session.broken = true
+    conn.session.isOpen = false
+    await conn.transport.close()
+  }
+  throw err
+}
+
 function toFile(handle: number, info: ObjectInfo): WatchFile {
   return {
     handle,
@@ -300,19 +313,19 @@ export async function sendMap(
   } catch (e) {
     // A refused announcement leaves nothing; one that timed out or broke leaves the watch's
     // state unknown, so an empty file may exist.
-    throw toWatchError(e, OperationCode.SendObjectInfo, !(e instanceof MtpResponseError))
+    return fail(conn, e, OperationCode.SendObjectInfo, !(e instanceof MtpResponseError))
   }
   // From here on, a failure may leave a partial file in GARMIN.
   try {
     await session.sendObject(bytes, (sent, total) => onProgress(sent / total))
   } catch (e) {
-    throw toWatchError(e, OperationCode.SendObject, true)
+    return fail(conn, e, OperationCode.SendObject, true)
   }
   let info: ObjectInfo
   try {
     info = await session.getObjectInfo(handle)
   } catch (e) {
-    throw toWatchError(e, OperationCode.GetObjectInfo, true)
+    return fail(conn, e, OperationCode.GetObjectInfo, true)
   }
   log.info(`Read back: ${info.filename}, ${count(info.objectCompressedSize)} bytes`)
   if (info.filename !== fileName || info.objectCompressedSize !== bytes.length) {
@@ -332,7 +345,7 @@ export async function deleteFile(conn: WatchConnection, handle: number): Promise
   try {
     await conn.session.deleteObject(handle)
   } catch (e) {
-    throw toWatchError(e, OperationCode.DeleteObject)
+    return fail(conn, e, OperationCode.DeleteObject)
   }
 }
 
@@ -374,7 +387,7 @@ export async function readFreeSpace(conn: WatchConnection): Promise<number> {
     conn.freeBytes = storage.freeSpaceInBytes
     return conn.freeBytes
   } catch (e) {
-    throw toWatchError(e, OperationCode.GetStorageInfo)
+    return fail(conn, e, OperationCode.GetStorageInfo)
   }
 }
 
