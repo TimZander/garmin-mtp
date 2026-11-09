@@ -13,7 +13,7 @@
 
 ## 3. Review and records
 
-- [ ] 3.1 Conformance review
+- [x] 3.1 Conformance review, 1 round: no hard fail; S1 (publish job's actions), S2 (README wording), R1 (no .npmrc or publishConfig) fixed in tests, S3 in the spec
 - [ ] 3.2 `/security-review` of the diff and an attack test (the workflow handles a secret)
 - [ ] 3.3 ADRs and lessons
 

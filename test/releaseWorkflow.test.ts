@@ -117,6 +117,12 @@ describe('release workflow', () => {
     expect(publish?.env).toEqual({ NODE_AUTH_TOKEN: '${{ secrets.NPM_TOKEN }}' })
   })
 
+  it('leaves the registry to setup-node: no committed .npmrc and no publishConfig', () => {
+    expect(existsSync(fileURLToPath(new URL('../.npmrc', import.meta.url)))).toBe(false)
+    const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'))
+    expect(pkg.publishConfig).toBeUndefined()
+  })
+
   // "The release's reach is kept small"
   it('grants contents: read, and id-token: write to the publish job alone', () => {
     expect(workflow.permissions).toEqual({ contents: 'read' })
@@ -129,6 +135,9 @@ describe('release workflow', () => {
     expect(commands).toHaveLength(2)
     expect(commands[0]).toMatch(/^npm install -g npm@\d+\.\d+\.\d+$/)
     expect(commands[1]).toBe('npm publish --access public --provenance --ignore-scripts')
+    // Its only actions: check out, set up Node, take the check job's dist.
+    const actions = publishJob.steps.map((s) => s.uses?.split('@')[0]).filter(Boolean)
+    expect(actions).toEqual(['actions/checkout', 'actions/setup-node', 'actions/download-artifact'])
   })
 
   it('pins every action to a full commit SHA', () => {
@@ -199,10 +208,9 @@ describe('README', () => {
   })
 
   it('says how a release is made', () => {
-    expect(releasing).toMatch(/version/i)
-    expect(releasing).toMatch(/pull request/i)
-    expect(releasing).toContain('release.yml')
-    expect(releasing).toContain('main')
+    expect(releasing).toMatch(/Bump `version` in `package\.json`[^\n]* in a pull request, and merge it/)
+    expect(releasing).toMatch(/run the \*\*release\*\* workflow \(`\.github\/workflows\/release\.yml`\) on `main`/)
+    expect(releasing).toMatch(/publishes only\s+from `main`/)
     expect(releasing).toContain('NPM_TOKEN')
     expect(releasing).toMatch(/approv/i)
     expect(releasing).toContain('`npm` environment')
