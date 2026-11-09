@@ -12,6 +12,6 @@
     "prepare": "node scripts/sdd/setup-agent-skills.mjs"
   },
   "dependencies": {
-    "webusb-mtp": "github:TimZander/webusb-mtp#994e99366860b5dc180e4c7c48a8f0a32cc9e047"
+    "webusb-mtp": "^0.1.0"
   }
 }
