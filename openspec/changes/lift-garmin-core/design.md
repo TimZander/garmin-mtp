@@ -24,6 +24,9 @@ dialogs, file and watch-name rules, and build identity; the probe page; new beha
 - **The app's marker leaves.** `isBuiltByApp(info)` compares with the app's `maps.timzander.com`.
   It becomes `carriesMarker(info, marker)`, and `mapOrigin(info, file, files, marker?)` returns
   `'marked'` instead of `'app'`, only when a marker is passed. The app passes its own.
+- **Two small exports are added:** `GARMIN_VENDOR_ID` and `isGarminDevice`, which the app had as a
+  constant in `webusb.ts` and a private helper in `knownWatches.ts`. Garmin mode's product id stays
+  private to the client.
 - **`webusb-mtp` is a git dependency, pinned to its merged commit** (`994e993`), until it is on
   npm. Its package has no `dist` from git, so TypeScript and vitest resolve `webusb-mtp` to its
   `src/index.ts` through a path alias. Replacing the pin with an npm version is a later change.
@@ -47,7 +50,7 @@ dialogs, file and watch-name rules, and build identity; the probe page; new beha
 | garmin-folder: A watch without a GARMIN folder is refused | watch-transfer: "Maps are sent to the GARMIN folder" (scenario "No GARMIN folder") |
 | garmin-folder: Connecting reports why it couldn't start | watch-transfer: "Other connection failures are explained", "Steps time out" (the error; the words stay with the app) |
 | garmin-folder: A session left open by another app is reopened | watch-usb-probe: "A stale session is reopened" (the client's part) |
-| garmin-folder: Failures are errors with a kind | watch-transfer: "Steps time out", "Other connection failures are explained" |
+| garmin-folder: Failures are errors with a kind | watch-transfer: "Steps time out" (incl. scenario "Watch answers before taking the data"), "Other connection failures are explained" |
 | garmin-folder: A file is sent into GARMIN and verified; A failed send says whether a partial file may be left | watch-transfer: "Sending shows progress and is verified", "The watch is always released" (scenario "Transfer breaks") |
 | garmin-folder: The library deletes only what it is asked to | watch-transfer: "The app never deletes without confirmation" (the library's part) |
 | garmin-folder: Free space can be read again | watch-maps: "The list reflects a delete" (the free space) |

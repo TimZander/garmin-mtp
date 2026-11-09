@@ -2,11 +2,13 @@
   "version": 1,
   "pins": {
     "garmin-folder": {
+      "Connecting takes the caller's timeouts": null,
       "Connecting finds the GARMIN folder": null,
       "A watch without a GARMIN folder is refused": null,
       "Connecting reports why it couldn't start": null,
       "A session left open by another app is reopened": null,
       "Failures are errors with a kind": null,
+      "What a failure leaves of the connection": null,
       "A file is sent into GARMIN and verified": null,
       "A failed send says whether a partial file may be left": null,
       "The library deletes only what it is asked to": null,
@@ -14,6 +16,7 @@
       "The watch is released on close and on failure": null,
       "Events are read and logged while connected": null,
       "Operations are logged without serial numbers": null,
+      "Connecting and sending log their steps": null,
       "Map files are read through their headers only": null
     },
     "img-headers": {
@@ -23,7 +26,7 @@
       "The header description is read": null,
       "The header info says how the map was made": null,
       "A marker is matched on every map record": null,
-      "Only maps made with mkgmap may be deleted": null
+      "Maps are classified as made with mkgmap or protected": null
     },
     "watch-choice": {
       "Garmin devices are recognised by vendor id": null,

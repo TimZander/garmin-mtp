@@ -5,6 +5,15 @@ there, with errors that say which step failed and what state the watch was left 
 
 ## ADDED Requirements
 
+### Requirement: Connecting takes the caller's timeouts
+Connecting SHALL take an optional timeout, used for each USB setup call and each MTP operation,
+and an optional write timeout, used for the watch's answer to SendObjectInfo and SendObject. When
+either is left out, `webusb-mtp`'s default applies.
+
+#### Scenario: Timeout given
+- **WHEN** a client connects with a timeout of 20 ms and the watch doesn't answer GetStorageIDs
+- **THEN** connecting fails with kind `timeout` after about 20 ms, not after the default
+
 ### Requirement: Connecting finds the GARMIN folder
 Connecting SHALL claim the watch's MTP interface, open a session and return a connection to the
 folder named `GARMIN` (any case) at the root of the first storage, in the watch's order, that has
@@ -32,9 +41,9 @@ create nothing, close the session and close the device.
 - **THEN** connecting fails with kind `no-garmin-folder`, no object is sent, CloseSession is the last operation and the device is closed
 
 ### Requirement: Connecting reports why it couldn't start
-Connecting SHALL fail with kind `no-interface` when the watch offers no MTP interface, and with
-kind `setup` or `setup-timeout`, naming the step, when opening, configuring, claiming or
-selecting the interface throws or doesn't complete in time; the device is closed either way.
+Connecting SHALL fail with kind `no-interface`, opening nothing, when the watch offers no MTP
+interface, and with kind `setup` or `setup-timeout`, naming the step and closing the device, when
+opening, configuring, claiming or selecting the interface throws or doesn't complete in time.
 
 #### Scenario: Claim refused
 - **WHEN** claiming the interface throws "Unable to claim interface."
@@ -46,34 +55,56 @@ selecting the interface throws or doesn't complete in time; the device is closed
 
 #### Scenario: No MTP interface
 - **WHEN** the watch's configuration has no interface with bulk IN, bulk OUT and interrupt IN endpoints
-- **THEN** connecting fails with kind `no-interface` and nothing is claimed
+- **THEN** connecting fails with kind `no-interface`, and the device is neither opened nor claimed
 
 ### Requirement: A session left open by another app is reopened
 When OpenSession is answered SessionAlreadyOpen (`0x201E`), connecting SHALL send CloseSession,
-then OpenSession again, log that it reopened the session, and go on. When the second OpenSession
-is refused, it SHALL fail with kind `no-session`.
+then OpenSession again even if CloseSession is refused, log that it reopened the session, and go
+on. When OpenSession is refused with any other code, or the second OpenSession is refused,
+connecting SHALL fail with kind `no-session`.
 
 #### Scenario: Stale session
 - **WHEN** the watch answers the first OpenSession with `0x201E`
 - **THEN** the operations sent begin GetDeviceInfo, OpenSession, CloseSession, OpenSession, the log says the session was reopened, and the connection is returned
 
+#### Scenario: Stale session that can't be closed
+- **WHEN** the first OpenSession is answered `0x201E`, CloseSession `0x2002`, and the second OpenSession OK
+- **THEN** the connection is returned
+
 #### Scenario: Reopen refused
 - **WHEN** both OpenSessions are answered `0x201E`
 - **THEN** connecting fails with kind `no-session`
 
+#### Scenario: Session refused outright
+- **WHEN** OpenSession is answered `0x2005`
+- **THEN** connecting fails with kind `no-session`
+
 ### Requirement: Failures are errors with a kind
 Every failure SHALL be an error with one of the kinds `garmin-mode`, `no-interface`, `setup`,
-`setup-timeout`, `no-session`, `no-garmin-folder`, `response`, `broken`, `timeout` or `mismatch`,
-naming the operation and, for `response`, the response code. A `response` leaves the connection
-usable; `broken` and `timeout` mean the device was closed.
+`setup-timeout`, `no-session`, `no-garmin-folder`, `response`, `broken`, `timeout` or `mismatch`.
+An error from an MTP operation SHALL give the operation's code, and a `response` the response
+code. A failure while connecting SHALL release the watch, whatever its kind.
 
 #### Scenario: Operation times out while connecting
 - **WHEN** the watch doesn't answer GetStorageIDs within the timeout
 - **THEN** connecting fails with kind `timeout`, a message naming GetStorageIDs, and the device is closed
 
+#### Scenario: Refused while connecting
+- **WHEN** GetStorageIDs is answered `0x2002`
+- **THEN** connecting fails with kind `response`, operation `0x1004`, response code `0x2002`, and the device is closed
+
+### Requirement: What a failure leaves of the connection
+After connecting, a `response` SHALL leave the connection usable, except a write the watch
+answered before taking its data, which closes the device. `broken` and `timeout` SHALL mean the
+device was closed.
+
 #### Scenario: Refused delete
 - **WHEN** DeleteObject is answered `0x200D`
 - **THEN** the error has kind `response`, operation `0x100B`, response code `0x200D`, and the session isn't broken
+
+#### Scenario: Watch answers before taking the data
+- **WHEN** the watch answers SendObjectInfo with `0x2002` before accepting its file information
+- **THEN** sending fails with kind `response`, response code `0x2002`, and the device is closed
 
 ### Requirement: A file is sent into GARMIN and verified
 Sending SHALL announce the file in `GARMIN` under the given name, with its size and the given
@@ -111,7 +142,8 @@ possibly leaving a partial file.
 
 ### Requirement: The library deletes only what it is asked to
 Sending SHALL never delete anything, even when a file of the same name exists. Deleting SHALL
-remove exactly the object the caller names, and nothing else.
+remove exactly the object the caller names, and nothing else; it doesn't check where the file came
+from, which is the caller's decision (`img-headers` classifies maps).
 
 #### Scenario: Send beside a same-name file
 - **WHEN** a file is sent and `GARMIN` already holds one of that name
@@ -156,9 +188,10 @@ parameters.
 - **THEN** the send completes, and the log has `Event: ObjectAdded (0x4002)` with the new handle as its parameter
 
 ### Requirement: Operations are logged without serial numbers
-Every answered operation SHALL be logged with its name, code, response name and code, writes
-also with how long the watch took to answer. Before anything is logged, the device's USB and MTP
-serial numbers SHALL be handed to the log for redaction.
+Every answered operation SHALL be logged with its name, code, response name and code, and
+SendObjectInfo and SendObject also with how long the watch took to answer. The device's USB serial
+SHALL be handed to the log for redaction before anything is logged, and its MTP serial as soon as
+GetDeviceInfo returns it, before any later line.
 
 #### Scenario: Slow write logged
 - **WHEN** the watch answers SendObjectInfo after 40 ms
@@ -167,6 +200,15 @@ serial numbers SHALL be handed to the log for redaction.
 #### Scenario: Serial numbers redacted
 - **WHEN** the device's USB serial is `USB11111` and its MTP serial is `MTP22222`, and the log removes what it is handed
 - **THEN** neither appears in the log
+
+### Requirement: Connecting and sending log their steps
+The log SHALL also get, as diagnostics: the model; the `GARMIN` folder found, with its object count
+and free space; each send's announcement; the file information sent with SendObjectInfo, as hex;
+what the watch accepted; and the name and size read back.
+
+#### Scenario: A send's diagnostics
+- **WHEN** a 10-byte file `a.img` is sent
+- **THEN** the log has a line announcing `a.img`, a hex dump of the file information, a line that the watch accepted all 10 bytes, and `Read back: a.img, 10 bytes`
 
 ### Requirement: Map files are read through their headers only
 The connection SHALL read a map file's family id or header info through partial reads of that

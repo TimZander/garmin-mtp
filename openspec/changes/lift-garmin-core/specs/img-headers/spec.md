@@ -36,17 +36,22 @@ read throws, header reading SHALL return a result saying why instead of throwing
 - **THEN** the family id is unknown with that reason
 
 ### Requirement: The family id comes from TYP, then MPS
-The family id SHALL be the u16 at `0x2F` of the first TYP subfile whose header says `GARMIN TYP`,
-else the family id of the first map (`L`) or family (`F`) record of the first MPS subfile, else
-unknown with a reason. A TYP family found before the budget runs out SHALL be kept.
+The family id SHALL be the u16 at `0x2F` of a TYP subfile whose header says `GARMIN TYP`, else the
+family id of the first map (`L`) or family (`F`) record of the first MPS subfile, else unknown with
+a reason. Reading the family id alone SHALL try each TYP in turn; the header info only the first.
+A TYP family found before the budget runs out SHALL be kept.
 
 #### Scenario: mkgmap map
 - **WHEN** an mkgmap map built with family id 4242 is read
 - **THEN** its family id is 4242, from TYP
 
 #### Scenario: No TYP subfile
-- **WHEN** the same map's TYP directory entry is renamed
+- **WHEN** the same map's TYP directory entry gets another extension
 - **THEN** its family id is 4242, from MPS
+
+#### Scenario: First TYP isn't a Garmin TYP
+- **WHEN** a map's first TYP subfile's header doesn't say `GARMIN TYP` and a second TYP's does, with family id 7
+- **THEN** reading the family id alone gives 7, from TYP; the header info gives the MPS family id
 
 #### Scenario: Budget runs out in the directory
 - **WHEN** the budget is just enough to reach the TYP subfile but not the end of the directory
@@ -75,7 +80,7 @@ was read. When the map records can't all be read, the area names SHALL be empty.
 - **THEN** the header info says it has a GMP subfile
 
 #### Scenario: No MPS subfile
-- **WHEN** a map's MPS directory entry is renamed
+- **WHEN** a map's MPS directory entry gets another extension
 - **THEN** the area names are empty and the MPS isn't `MAKEGMAP`
 
 ### Requirement: A marker is matched on every map record
@@ -94,7 +99,7 @@ and every map record's area name equals that marker.
 - **WHEN** a map has no map records
 - **THEN** it doesn't carry any marker
 
-### Requirement: Only maps made with mkgmap may be deleted
+### Requirement: Maps are classified as made with mkgmap or protected
 A map in `GARMIN` SHALL count as made with mkgmap when its whole directory was read, an MPS
 subfile is named `MAKEGMAP`, it has no `GMP` subfile, and `GARMIN` holds no `.gma` file (any case,
 not a folder) with its base name. Every other map SHALL count as protected. With a marker named,
