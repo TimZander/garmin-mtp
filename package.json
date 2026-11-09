@@ -1,7 +1,6 @@
 {
   "name": "garmin-mtp",
   "version": "0.1.0",
-  "private": true,
   "description": "Garmin watches over WebUSB: find the GARMIN folder, send and verify map files, read IMG headers. Built on webusb-mtp.",
   "license": "MIT",
   "author": "Tim Zander",
@@ -54,6 +53,7 @@
     "@fission-ai/openspec": "1.14.1",
     "@types/node": "^22.10.0",
     "typescript": "~5.7.3",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.9",
+    "yaml": "^2.9.1"
   }
 }

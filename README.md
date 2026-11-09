@@ -5,7 +5,13 @@ watch, find its `GARMIN` folder, send map files there and verify them, delete th
 file's headers without fetching the whole file. Built on
 [webusb-mtp](https://github.com/TimZander/webusb-mtp), which handles the WebUSB and MTP transport.
 
-**Status:** 0.1.0, not published to npm yet.
+## Install
+
+```sh
+npm install garmin-mtp
+```
+
+It brings `webusb-mtp` with it.
 
 ## Browser support
 
@@ -70,6 +76,24 @@ npm run build   # ES modules and type declarations in dist/
 Tests run in Node against a scripted fake USB device (`test/fakeMtpDevice.ts`, copied from
 `webusb-mtp`) and two small maps built with mkgmap (`test/fixtures`). The behaviour is specified in
 `openspec/specs/`, and changes go through spec-driven development (see `CLAUDE.md`).
+
+## Releasing
+
+1. Bump `version` in `package.json` (and `package-lock.json`) in a pull request, and merge it.
+2. In the Actions tab, run the **release** workflow (`.github/workflows/release.yml`) on `main`.
+   It installs, type-checks, tests and builds, then waits for the owner to approve the publish
+   in the `npm` environment, then publishes that version to npm with provenance. It publishes only
+   from `main`, and a version npm already has fails the run.
+
+The `npm` environment (Settings → Environments) has the owner as required reviewer and allows
+`main` only; it must exist before the first release.
+
+The first publish authenticates with a short-lived npm token in the `NPM_TOKEN` repository secret.
+After it, add this workflow as the package's trusted publisher on npmjs.com (GitHub Actions,
+repository `TimZander/garmin-mtp`, workflow `release.yml`, environment `npm`), then delete the token
+and the secret: later releases use trusted publishing, with no stored credential.
+
+The workflow is the same as `webusb-mtp`'s; a change to one belongs in the other.
 
 ## License
 

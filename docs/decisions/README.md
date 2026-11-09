@@ -14,3 +14,5 @@ one. A superseded record stays, with its status set to `superseded by NNNN`.
 | [0006](0006-how-lift-garmin-core-was-run.md) | How lift-garmin-core was run | accepted |
 | [0007](0007-error-messages-keep-the-apps-wording.md) | Error messages keep the app's wording for now | accepted |
 | [0008](0008-package-name-garmin-mtp.md) | The npm package is `garmin-mtp`, unscoped | accepted |
+| [0009](0009-release-like-webusb-mtp.md) | Release with a copy of webusb-mtp's workflow, approved by the owner | accepted |
+| [0010](0010-how-release-to-npm-was-run.md) | How release-to-npm was reviewed | accepted |
