@@ -14,7 +14,7 @@
 
 ## 3. Package and CI
 
-- [ ] 3.1 `package.json`: name, version, MIT, `type: module`, `exports`, `types`, `files`, scripts, `webusb-mtp` pinned; `tsconfig.json` and `tsconfig.build.json` with the path alias; vitest alias
+- [ ] 3.1 `package.json`: name, version, MIT, `type: module`, `exports`, `types`, `files`, scripts, `webusb-mtp` `^0.1.0` from npm; `tsconfig.json` and `tsconfig.build.json`
 - [ ] 3.2 `.github/workflows/ci.yml`: `npm ci`, type check, tests, build
 - [ ] 3.3 README and `CLAUDE.md`'s project section
 

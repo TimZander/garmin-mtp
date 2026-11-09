@@ -41,7 +41,7 @@ None (the repository has no specs yet).
 ## Impact
 
 - New code under `src/`, tests and fixtures under `test/`, packaging, CI and README.
-- New dependency: `webusb-mtp`, pinned to a commit of its repository until it is on npm.
+- New dependency: `webusb-mtp` from npm, `^0.1.0`.
 - Out of scope: the app's dialogs, messages and platform hints, its file and watch-name rules,
   its build identity (family ids, `--description`, its marker's value), the probe page, and
   switching the app over.

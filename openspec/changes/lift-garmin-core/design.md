@@ -3,7 +3,7 @@
 See proposal.md for why. The code comes from the map app's `knownWatches.ts`, `mtp/client.ts`,
 `imgHeader.ts` and the Garmin vendor id in `webusb.ts`. The client already runs on the four MTP
 modules that `webusb-mtp` now holds, with the same API (`webusb-mtp` changed comments and three
-diagnostic notes, and fixed two bugs). `webusb-mtp` is not on npm yet.
+diagnostic notes, and fixed two bugs). `webusb-mtp` 0.1.0 is on npm.
 
 ## Goals / Non-Goals
 
@@ -27,9 +27,8 @@ dialogs, file and watch-name rules, and build identity; the probe page; new beha
 - **Two small exports are added:** `GARMIN_VENDOR_ID` and `isGarminDevice`, which the app had as a
   constant in `webusb.ts` and a private helper in `knownWatches.ts`. Garmin mode's product id stays
   private to the client.
-- **`webusb-mtp` is a git dependency, pinned to its merged commit** (`994e993`), until it is on
-  npm. Its package has no `dist` from git, so TypeScript and vitest resolve `webusb-mtp` to its
-  `src/index.ts` through a path alias. Replacing the pin with an npm version is a later change.
+- **`webusb-mtp` comes from npm, as `^0.1.0`, with no path alias.** TypeScript and vitest
+  resolve it through its published `dist` and declarations, as any user of the library would.
 - **The fake USB device is copied from `webusb-mtp`'s tests** (`test/fakeMtpDevice.ts`), since
   `webusb-mtp` doesn't ship its tests. The client tests use a small test log instead of the
   app's probe log.
@@ -65,17 +64,16 @@ the app's dialogs, messages, names and builds.
 
 ## Risks / Trade-offs
 
-- [A git dependency with a path alias is unusual, and `npm install` of `webusb-mtp` runs its
-  `prepare` script] → it is temporary; once `webusb-mtp` is on npm, the alias goes.
+- [A `^0.1.0` range takes `webusb-mtp`'s later 0.1.x releases] → the lock file pins the one
+  installed, and a 0.x minor bump needs a deliberate change here.
 - [The app keeps its own copy for now] → the two can drift until the app switches over.
 - [`webusb-mtp` fixed two bugs the app's copy still has] → this library gets the fixes through
   the dependency; the app gets them when it switches.
 
 ## Open Questions
 
-1. **How should `garmin-mtp` depend on `webusb-mtp` before it is on npm?** *Assumption:* a git
-   dependency pinned to `994e993`, with a path alias to its source; replaced by an npm version
-   once the owner publishes it.
+1. **How should `garmin-mtp` depend on `webusb-mtp`?** *Answered by the owner:* npm `^0.1.0`, no
+   path alias, now that `webusb-mtp` 0.1.0 is published (ADR 0001).
 2. **Renaming the origin `'app'` to `'marked'`, with the marker passed in.** *Assumption:* yes;
    the library knows no app, and the app passes `maps.timzander.com` when it switches.
 3. **Error messages keep the app's wording** (for example "so the map wasn't sent" for a missing

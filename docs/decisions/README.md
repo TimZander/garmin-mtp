@@ -6,3 +6,4 @@ one. A superseded record stays, with its status set to `superseded by NNNN`.
 
 | No. | Decision | Status |
 |---|---|---|
+| [0001](0001-webusb-mtp-from-npm.md) | Depend on webusb-mtp from npm | accepted |
