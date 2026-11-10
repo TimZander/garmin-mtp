@@ -25,7 +25,8 @@ None.
 
 ### Modified Capabilities
 
-- `garmin-folder`: a new requirement for an over-long name, and `name-too-long` in the kinds.
+- `garmin-folder`: a new requirement for an over-long name; `name-too-long` added to the kinds, to
+  what a failure leaves of the connection, to whether a failed send leaves a file, and to the log.
 
 ## Impact
 

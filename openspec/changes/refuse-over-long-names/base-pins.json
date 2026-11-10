@@ -3,7 +3,10 @@
   "pins": {
     "garmin-folder": {
       "A name longer than MTP allows is refused before sending": null,
-      "Failures are errors with a kind": "20e88ee106bc1d58670fac99f533115c0c6f1f9c1d993ce1bd8c432898ed2f87"
+      "Failures are errors with a kind": "20e88ee106bc1d58670fac99f533115c0c6f1f9c1d993ce1bd8c432898ed2f87",
+      "What a failure leaves of the connection": "7d44b870d63388ea81507e1d246d3ef26c1ce5a3aeef1a7437a88bbdb927bfeb",
+      "A failed send says whether a partial file may be left": "390f533c29ba9b1dffd6a3d89b3d5d20d76a0410073a8b1acd28442af2e536f0",
+      "Connecting and sending log their steps": "7070db742e4f040b68b3f1f0a6ecad7a842dd8d3981eb862134e323b761e2b18"
     }
   }
 }

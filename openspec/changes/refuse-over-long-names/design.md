@@ -30,8 +30,11 @@ shortening or rewriting a name for the caller; changing `webusb-mtp`.
 - **Count UTF-16 code units, as JavaScript's `length` does**, because that is what an MTP string
   holds and what the encoder counts; a name of 130 characters can exceed the limit when they lie
   outside the Basic Multilingual Plane.
-- **The refusal is logged** with `log.error`, as other failures are, giving the length and the
-  limit.
+- **The refusal is logged** with `log.error`, giving the length and the limit, as the error's
+  message does (spec review round 1, G1 and D3: the log line was in the design but in no
+  requirement).
+- **No progress is reported for a refused name** (`onProgress` is never called), so a caller's
+  progress bar doesn't start for a send that never began (spec review round 1, D2).
 
 ## Open Questions
 
