@@ -5,8 +5,8 @@
 
 ## 2. Code
 
-- [ ] 2.1 `name-too-long` in `WatchErrorKind`; `sendMap` checks the name against `MAX_STRING_LENGTH` before anything else, logs the refusal and throws it
-- [ ] 2.2 Type check, tests and build pass
+- [x] 2.1 `name-too-long` in `WatchErrorKind`; `sendMap` checks the name against `MAX_STRING_LENGTH` before anything else, logs the refusal and throws it
+- [x] 2.2 Type check, tests (111) and build pass; README lists the new kind
 
 ## 3. Review and records
 
