@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "pins": {
+    "garmin-folder": {
+      "A name longer than MTP allows is refused before sending": null,
+      "Failures are errors with a kind": "20e88ee106bc1d58670fac99f533115c0c6f1f9c1d993ce1bd8c432898ed2f87"
+    }
+  }
+}
