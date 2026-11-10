@@ -47,4 +47,4 @@ shortening or rewriting a name for the caller; changing `webusb-mtp`.
 ## Risks / Trade-offs
 
 - A new member of `WatchErrorKind` is a type error for a caller with an exhaustive `switch`; 0.x
-  versions allow it in a patch, and garmin-map is the only known caller.
+  versions allow it in a patch, and the app is the only known caller.

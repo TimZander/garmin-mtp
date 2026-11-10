@@ -50,5 +50,5 @@ Chosen options: "check up front" and, pending the owner's answer to Q0, "`name-t
   name.
 - Good, because no `webusb-mtp` release is needed.
 - Bad, because `WatchErrorKind` gains a member: a caller's exhaustive `switch` gets a type error
-  until it handles it. garmin-map, the only known caller, bumps the dependency in its own change.
+  until it handles it. the app, the only known caller, bumps the dependency in its own change.
 - Bad, because the limit is checked twice (here and in the encoder). Both read the same constant.

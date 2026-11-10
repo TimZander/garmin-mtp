@@ -7,7 +7,7 @@ decision-makers: Claude
 
 ## Context and Problem Statement
 
-A small bug fix, found while switching garmin-map onto the library, run as a full sdd change after
+A small bug fix, found while switching the app onto the library, run as a full sdd change after
 the owner said "do the garmin-mtp fix after the switch". Learning mode records how it was split and
 reviewed.
 

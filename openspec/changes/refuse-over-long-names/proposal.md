@@ -32,6 +32,6 @@ None.
 
 - `src/client.ts` (`sendMap`, `WatchErrorKind`) and `test/client.test.ts`.
 - The public type `WatchErrorKind` gains a member: a caller with an exhaustive `switch` over it
-  gets a type error until it handles `name-too-long`. The only known caller is garmin-map, which
+  gets a type error until it handles `name-too-long`. The only known caller is the app, which
   bumps the dependency in its own change.
 - Released afterwards as 0.1.2 through the existing release workflow; not part of this change.
