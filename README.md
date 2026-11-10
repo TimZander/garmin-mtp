@@ -51,9 +51,10 @@ try {
 ```
 
 Every failure is a `WatchError` with a `kind`: `garmin-mode`, `no-interface`, `setup`,
-`setup-timeout`, `no-session`, `no-garmin-folder`, `response`, `broken`, `timeout` or `mismatch`.
-After connecting, `response` leaves the connection usable; `broken` and `timeout` mean the device
-was closed. A failed send says whether it may have left a partial file (`partialFile`).
+`setup-timeout`, `no-session`, `no-garmin-folder`, `response`, `broken`, `timeout`, `mismatch` or
+`name-too-long`. After connecting, `response` leaves the connection usable; `broken` and `timeout`
+mean the device was closed. A name longer than MTP allows (254 UTF-16 units) is refused as
+`name-too-long` before anything is sent, and the connection stays usable. A failed send says whether it may have left a partial file (`partialFile`).
 
 `mapOrigin` says whether a map was made with mkgmap (and so may be deleted) or is protected. Pass a
 marker to tell your own maps apart: a map whose every map record has that area name is `marked`.

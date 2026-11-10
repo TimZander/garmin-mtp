@@ -6,6 +6,8 @@ import type { WatchLog } from '../src/index.js'
 export class TestLog implements WatchLog {
   readonly lines: string[] = []
   readonly events: string[] = []
+  // The lines logged with error(), as kept.
+  readonly errors: string[] = []
   private readonly secrets: string[] = []
 
   redact(secret: string | undefined): void {
@@ -14,10 +16,11 @@ export class TestLog implements WatchLog {
     this.events.push(`redact ${secret}`)
   }
 
-  private add(text: string): void {
+  private add(text: string): string {
     const line = this.secrets.reduce((t, s) => t.split(s).join('[serial]'), text)
     this.lines.push(line)
     this.events.push(`line ${line}`)
+    return line
   }
 
   info(text: string): void {
@@ -29,7 +32,7 @@ export class TestLog implements WatchLog {
   }
 
   error(text: string): void {
-    this.add(text)
+    this.errors.push(this.add(text))
   }
 
   data(text: string): void {

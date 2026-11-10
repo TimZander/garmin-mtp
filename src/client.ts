@@ -7,6 +7,7 @@
 // The client never deletes on its own: deleteFile removes only the object the caller names.
 
 import {
+  MAX_STRING_LENGTH,
   MtpResponseError,
   MtpSession,
   MtpTimeoutError,
@@ -60,6 +61,7 @@ export type WatchErrorKind =
   | 'broken' // a transfer threw; the device was closed
   | 'timeout' // an operation got no answer (or a send stalled); the device was closed
   | 'mismatch' // the file read back doesn't match what was sent
+  | 'name-too-long' // the name is longer than an MTP string holds; nothing was sent
 
 export class WatchError extends Error {
   constructor(
@@ -289,6 +291,8 @@ export interface SentFile {
 
 // Send `bytes` as `fileName` into the GARMIN folder, then read it back and check its name and
 // size. onProgress gets 0..1. Never deletes: a same-name file is the caller's to remove first.
+// A name longer than an MTP string holds (counted in UTF-16 units) is refused before anything is
+// sent, and leaves the connection usable.
 export async function sendMap(
   conn: WatchConnection,
   fileName: string,
@@ -297,6 +301,13 @@ export async function sendMap(
   now: Date = new Date(),
 ): Promise<SentFile> {
   const { session, log } = conn
+  if (fileName.length > MAX_STRING_LENGTH) {
+    const message =
+      `The file name is ${fileName.length} UTF-16 units long; MTP allows at most ${MAX_STRING_LENGTH}, ` +
+      'so nothing was sent.'
+    log.error(message)
+    throw new WatchError('name-too-long', message)
+  }
   let handle: number
   log.info(`Announcing ${fileName} to the watch (SendObjectInfo) and waiting for its answer`)
   try {

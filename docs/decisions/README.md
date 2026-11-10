@@ -17,3 +17,5 @@ one. A superseded record stays, with its status set to `superseded by NNNN`.
 | [0009](0009-release-like-webusb-mtp.md) | Release with a copy of webusb-mtp's workflow, approved by the owner | accepted |
 | [0010](0010-how-release-to-npm-was-run.md) | How release-to-npm was reviewed | accepted |
 | [0011](0011-trusted-publisher-may-publish.md) | The trusted publisher may publish, not only stage | accepted |
+| [0012](0012-over-long-name-refused-up-front.md) | An over-long file name is refused up front, as `name-too-long` | proposed |
+| [0013](0013-how-refuse-over-long-names-was-run.md) | How refuse-over-long-names was run | accepted |
