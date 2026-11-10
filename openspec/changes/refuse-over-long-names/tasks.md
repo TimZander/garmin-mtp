@@ -1,7 +1,7 @@
 ## 1. Tests first
 
-- [ ] 1.1 Tests in `test/client.test.ts` for the new scenarios, each citing its requirement: 255 units refused (kind, message, no operation, no progress, no announcement logged, device open); 254 sent and verified; 130 characters of 256 units refused; connection kept (session not broken, free space readable); not marked as a partial file; the refusal's error log line
-- [ ] 1.2 See them fail against the current `sendMap`
+- [x] 1.1 Tests in `test/client.test.ts` for the new scenarios, each citing its requirement: 255 units refused (kind, message, no operation, no progress, no announcement logged, device open); 254 sent and verified; 130 characters of 256 units refused; connection kept (session not broken, free space readable); not marked as a partial file; the refusal's error log line
+- [x] 1.2 See them fail against the current `sendMap` (5 failed with kind `broken`, partial file marked; the 254-unit send already passed, as it should)
 
 ## 2. Code
 

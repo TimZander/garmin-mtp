@@ -349,6 +349,66 @@ describe('sendMap', () => {
   })
 })
 
+// Spec: garmin-folder › "A name longer than MTP allows is refused before sending", and the
+// name-too-long scenarios of "What a failure leaves of the connection", "A failed send says
+// whether a partial file may be left" and "Connecting and sending log their steps".
+describe('sendMap with an over-long name', () => {
+  const tooLong = 'a'.repeat(251) + '.img' // 255 UTF-16 units
+  const longest = 'a'.repeat(250) + '.img' // 254
+  const wide = '\u{1F5FA}'.repeat(126) + '.img' // 130 characters, 256 units
+
+  async function refused(name: string) {
+    const s = await connected()
+    const before = s.fake.sentOperations.length
+    const progress: number[] = []
+    const err = await fail(sendMap(s.conn, name, new Uint8Array(10), (f) => progress.push(f)))
+    return { ...s, err, progress, sentBySend: s.fake.sentOperations.slice(before) }
+  }
+
+  it('refuses a name one unit too long before sending anything', async () => {
+    const { fake, err, progress, sentBySend, text } = await refused(tooLong)
+    expect(err).toBeInstanceOf(WatchError)
+    expect(err.kind).toBe('name-too-long')
+    expect(err.message).toMatch(/255/)
+    expect(err.message).toMatch(/254/)
+    expect(sentBySend).toEqual([])
+    expect(progress).toEqual([])
+    expect(text()).not.toMatch(/Announcing/)
+    expect(fake.opened).toBe(true)
+  })
+
+  it('sends the longest name MTP allows', async () => {
+    const { fake, conn } = await connected()
+    const result = await sendMap(conn, longest, new Uint8Array(10), () => {})
+    expect(result).toMatchObject({ name: longest, size: 10 })
+    expect(fake.objects.find((o) => o.handle === result.handle)?.name).toBe(longest)
+  })
+
+  it('counts UTF-16 units, not characters', async () => {
+    expect(wide.length).toBe(256)
+    expect([...wide].length).toBe(130)
+    const { err } = await refused(wide)
+    expect(err.kind).toBe('name-too-long')
+  })
+
+  it('keeps the connection usable', async () => {
+    const { conn, err } = await refused(tooLong)
+    expect(err.kind).toBe('name-too-long')
+    expect(conn.session.broken).toBe(false)
+    expect(await readFreeSpace(conn)).toBeGreaterThan(0)
+  })
+
+  it('is not marked as leaving a partial file', async () => {
+    const { err } = await refused(tooLong)
+    expect(err.partialFile).toBe(false)
+  })
+
+  it('logs the refusal as an error with the length and the limit', async () => {
+    const { log } = await refused(tooLong)
+    expect(log.errors.some((l) => /255/.test(l) && /254/.test(l))).toBe(true)
+  })
+})
+
 describe('deleteFile, readFreeSpace and closeWatch', () => {
   it('deletes exactly the given object', async () => {
     const { fake, conn } = await connected()
