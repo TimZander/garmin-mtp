@@ -2,6 +2,14 @@
 
 What surprised us or went wrong, and what to do differently. Newest first.
 
+## 2026-11-10 — `npm view <pkg>@latest` showed `0.0.0-stage` for minutes after a publish (0.1.1)
+
+Right after the 0.1.1 release published, `npm view garmin-mtp@latest version` answered
+`0.0.0-stage` for several minutes before it showed `0.1.1`. The publish had worked; the registry's
+answer was stale. **Do instead:** after a release, poll
+`npm view <pkg>@latest version --prefer-online` until it shows the new version, in the background
+for a wait of more than two minutes, before deciding a publish failed or bumping a dependent.
+
 ## 2026-11-09 — A trusted publisher allowed to stage refused a direct publish (0.1.1)
 
 The first release without a token failed with `403 … OIDC permission denied for this action`,

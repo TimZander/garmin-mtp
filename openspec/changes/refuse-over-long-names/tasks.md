@@ -11,5 +11,5 @@
 ## 3. Review and records
 
 - [x] 3.1 Spec review, 1 round: no blocker; B1, B2, G1, D1, D2, D3 fixed in the delta, F1 kept (the proposal names it)
-- [ ] 3.2 Conformance review
-- [ ] 3.3 ADR for Q0 and for checking up front; how the change was run; the `0.0.0-stage` lesson in `docs/lessons.md`
+- [x] 3.2 Conformance review, 1 round: conforms, no findings
+- [x] 3.3 ADR 0012 (checking up front; Q0, proposed until the owner answers), ADR 0013 (how the change was run), the `0.0.0-stage` lesson in `docs/lessons.md`
