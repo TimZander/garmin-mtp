@@ -50,8 +50,15 @@ export function mapRecord(familyId: number, area: string): Uint8Array {
 }
 
 // An IMG with 512-byte blocks, its directory at 0x400 and each subfile in its own blocks after it.
-export function buildImg(subfiles: Subfile[], description = 'Synthetic'): Uint8Array {
-  const dirBlocks = subfiles.length + 1
+// With `ownEntry`, the directory starts with the IMG's own entry (blank name, part 0), whose size
+// says where the directory ends: after its last entry, unless `ownSize` gives another offset.
+export function buildImg(
+  subfiles: Subfile[],
+  description = 'Synthetic',
+  { ownEntry = false, ownSize }: { ownEntry?: boolean; ownSize?: number } = {},
+): Uint8Array {
+  const first = ownEntry ? 1 : 0
+  const dirBlocks = first + subfiles.length + 1
   const blocks = subfiles.map((s) => Math.max(1, Math.ceil(s.body.length / 0x200)))
   const total = DIR + dirBlocks * ENTRY + blocks.reduce((a, b) => a + b, 0) * 0x200
   const img = new Uint8Array(total)
@@ -61,9 +68,15 @@ export function buildImg(subfiles: Subfile[], description = 'Synthetic'): Uint8A
   img[0x62] = 0
   img.set(ascii(description.padEnd(20, ' ').slice(0, 20)), 0x49)
   img.set(ascii(description.slice(20).padEnd(31, ' ')), 0x65)
+  if (ownEntry) {
+    const size = ownSize ?? DIR + (dirBlocks - 1) * ENTRY
+    img[DIR] = 1
+    img.set(ascii(' '.repeat(11)), DIR + 1)
+    img.set([size & 0xff, (size >> 8) & 0xff, (size >> 16) & 0xff, size >>> 24], DIR + 0x0c)
+  }
   let block = (DIR + dirBlocks * ENTRY) / 0x200
   subfiles.forEach((s, i) => {
-    const e = DIR + i * ENTRY
+    const e = DIR + (first + i) * ENTRY
     img[e] = 1
     img.set(ascii(s.name.padEnd(8, ' ')), e + 1)
     img.set(ascii(s.ext), e + 9)
@@ -78,12 +91,14 @@ export function buildImg(subfiles: Subfile[], description = 'Synthetic'): Uint8A
   return img
 }
 
-// A readAt over bytes that records how much was read.
+// A readAt over bytes that records how much was read, and in how many reads.
 export function reader(bytes: Uint8Array) {
   let total = 0
+  let count = 0
   const readAt = async (offset: number, length: number) => {
     total += length
+    count += 1
     return bytes.slice(offset, offset + length)
   }
-  return { readAt, read: () => total }
+  return { readAt, read: () => total, reads: () => count }
 }

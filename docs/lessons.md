@@ -45,3 +45,10 @@ handling is broken.
 Two new client tests failed on first run because of the tests, not the code: `formatCode` prints
 `0x10001`, not `0x00010001`, and setup lines come before GetDeviceInfo's. **Do instead:** run a
 new test against the real log once and read the lines before writing the assertion.
+
+## 2026-11-24 — A speed-up was built on an unmeasured cause (fewer-header-reads)
+
+The change was started on the assumption that the number of reads, not the bytes, made header
+reading slow. The owner stopped it to ask how we knew. A five-minute timing run on the watch proved
+it, and a wrong guess would have made the change useless. **Do instead:** before building a
+speed-up, measure where the time goes on the real device, and say when a cause is assumed.

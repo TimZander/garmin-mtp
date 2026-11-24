@@ -14,6 +14,8 @@ export type ReadAt = (offset: number, length: number) => Promise<Uint8Array>
 export type FamilyIdResult = { familyId: number; source: 'TYP' | 'MPS' } | { unknown: string }
 
 const ENTRY_SIZE = 0x200
+// Room kept in a bulk directory read for a TYP subfile's header, read when its entry is seen.
+const TYP_HEADER_SIZE = 0x40
 
 class BudgetSpent extends Error {}
 
@@ -21,19 +23,71 @@ function u16(b: Uint8Array, at: number): number {
   return b[at] | (b[at + 1] << 8)
 }
 
+function u32(b: Uint8Array, at: number): number {
+  return (b[at] | (b[at + 1] << 8) | (b[at + 2] << 16) | (b[at + 3] << 24)) >>> 0
+}
+
 function text(b: Uint8Array, from: number, length: number): string {
   return String.fromCharCode(...b.subarray(from, from + length))
 }
 
-export async function readImgFamilyId(readAt: ReadAt, budget = HEADER_READ_BUDGET): Promise<FamilyIdResult> {
-  let spent = 0
-  const read = async (offset: number, length: number): Promise<Uint8Array> => {
-    if (spent + length > budget) throw new BudgetSpent()
-    spent += length
-    const bytes = await readAt(offset, length)
+// Reads at offsets within a budget: a read that would pass it is not made (BudgetSpent).
+class Budgeted {
+  spent = 0
+  constructor(
+    private readonly readAt: ReadAt,
+    readonly budget: number,
+  ) {}
+
+  get left(): number {
+    return this.budget - this.spent
+  }
+
+  async read(offset: number, length: number): Promise<Uint8Array> {
+    const bytes = await this.readUpTo(offset, length)
     if (bytes.length < length) throw new Error(`short read at ${offset} (${bytes.length} of ${length} bytes)`)
     return bytes
   }
+
+  // As read, but bytes that come back short are returned as they are.
+  async readUpTo(offset: number, length: number): Promise<Uint8Array> {
+    if (this.spent + length > this.budget) throw new BudgetSpent()
+    this.spent += length
+    return this.readAt(offset, length)
+  }
+}
+
+// The directory's entries in order, until one doesn't start with 1 (the walk's end). When the
+// first entry is the IMG's own (blank name, a size past the directory start, in whole entries), the entries after it up to one past that size are asked for in one read, cut to whole
+// entries within the budget, keeping `reserve()` bytes free. The own entry only sizes reads: the
+// walk still ends at the first entry that doesn't start with 1, one entry per read past it.
+async function* directoryEntries(io: Budgeted, start: number, reserve: () => number): AsyncGenerator<Uint8Array> {
+  const first = await io.read(start, ENTRY_SIZE)
+  if (first[0] !== 1) return
+  const size = u32(first, 0x0c)
+  const own = text(first, 1, 11) === ' '.repeat(11) && size > start && size % ENTRY_SIZE === 0
+  const until = own ? size + ENTRY_SIZE : 0
+  yield first
+  let chunk = new Uint8Array(0)
+  let chunkAt = 0
+  for (let offset = start + ENTRY_SIZE; ; offset += ENTRY_SIZE) {
+    if (offset + ENTRY_SIZE > chunkAt + chunk.length) {
+      const room = Math.floor((io.left - reserve()) / ENTRY_SIZE) * ENTRY_SIZE
+      const length = Math.max(ENTRY_SIZE, Math.min(until - offset, room))
+      // A bulk read that comes back short gives the entries it holds before the short read fails.
+      chunk = length > ENTRY_SIZE ? await io.readUpTo(offset, length) : await io.read(offset, length)
+      chunkAt = offset
+      if (chunk.length < ENTRY_SIZE) throw new Error(`short read at ${offset} (${chunk.length} of ${length} bytes)`)
+    }
+    const entry = chunk.subarray(offset - chunkAt, offset - chunkAt + ENTRY_SIZE)
+    if (entry[0] !== 1) return
+    yield entry
+  }
+}
+
+export async function readImgFamilyId(readAt: ReadAt, budget = HEADER_READ_BUDGET): Promise<FamilyIdResult> {
+  const io = new Budgeted(readAt, budget)
+  const read = (offset: number, length: number) => io.read(offset, length)
 
   try {
     const header = await read(0, 0x200)
@@ -46,9 +100,7 @@ export async function readImgFamilyId(readAt: ReadAt, budget = HEADER_READ_BUDGE
 
     // Walk the directory until its entries stop; remember the first MPS, stop at the first TYP.
     let mpsBlock: number | undefined
-    for (let offset = directoryStart; ; offset += ENTRY_SIZE) {
-      const entry = await read(offset, ENTRY_SIZE)
-      if (entry[0] !== 1) break
+    for await (const entry of directoryEntries(io, directoryStart, () => TYP_HEADER_SIZE)) {
       const ext = text(entry, 9, 3)
       const part = u16(entry, 0x10)
       const firstBlock = u16(entry, 0x20)
@@ -104,14 +156,8 @@ export function carriesMarker(info: ImgInfo, marker: string): boolean {
 
 export async function readImgInfo(readAt: ReadAt, budget = HEADER_READ_BUDGET): Promise<ImgInfo> {
   const info: ImgInfo = { family: { unknown: 'not read' }, mapAreas: [], description: '', mkgmapMps: false, hasGmp: false, directoryComplete: false }
-  let spent = 0
-  const read = async (offset: number, length: number): Promise<Uint8Array> => {
-    if (spent + length > budget) throw new BudgetSpent()
-    spent += length
-    const bytes = await readAt(offset, length)
-    if (bytes.length < length) throw new Error(`short read at ${offset} (${bytes.length} of ${length} bytes)`)
-    return bytes
-  }
+  const io = new Budgeted(readAt, budget)
+  const read = (offset: number, length: number) => io.read(offset, length)
   const reason = (e: unknown) =>
     e instanceof BudgetSpent ? `no family ID within the first ${budget / 1024} KB read` : e instanceof Error ? e.message : String(e)
 
@@ -133,9 +179,7 @@ export async function readImgInfo(readAt: ReadAt, budget = HEADER_READ_BUDGET): 
       return info
     }
     blockSize = 2 ** exponent
-    for (let offset = directoryStart; ; offset += ENTRY_SIZE) {
-      const entry = await read(offset, ENTRY_SIZE)
-      if (entry[0] !== 1) break
+    for await (const entry of directoryEntries(io, directoryStart, () => (typBlock === undefined ? TYP_HEADER_SIZE : 0))) {
       const name = text(entry, 1, 8).trim()
       const ext = text(entry, 9, 3)
       if (ext === 'GMP') info.hasGmp = true
