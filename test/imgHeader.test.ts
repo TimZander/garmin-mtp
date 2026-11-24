@@ -264,7 +264,8 @@ describe('directory reads', () => {
   })
 
   it('an entry past the size its own entry gives is still read: a GMP there counts', async () => {
-    const OWN_AND_TWO = 3
+    // The own entry covers itself and the TYP: the MPS sits at the size, the GMP one entry past it.
+    const OWN_AND_ONE = 2
     const img = buildImg(
       [
         { name: 'ONE', ext: 'TYP', body: typ(7) },
@@ -272,11 +273,34 @@ describe('directory reads', () => {
         { name: 'NT', ext: 'GMP', body: new Uint8Array(0x10) },
       ],
       'Synthetic',
-      { ownEntry: true, ownSize: DIR + OWN_AND_TWO * ENTRY },
+      { ownEntry: true, ownSize: DIR + OWN_AND_ONE * ENTRY },
     )
     const info = await readImgInfo(reader(img).readAt)
     expect(info.hasGmp).toBe(true)
     expect(info.directoryComplete).toBe(true)
+  })
+
+  it('a file cut short inside the bulk read keeps the TYP family seen before the cut', async () => {
+    const CUT = DIR + 4 * ENTRY
+    const img = buildImg(
+      [
+        { name: 'ONE', ext: 'TYP', body: typ(7) },
+        { name: 'MAKEGMAP', ext: 'MPS', body: mapRecord(7, 'Area') },
+        { name: 'RGN', ext: 'RGN', body: new Uint8Array(0x10) },
+        { name: 'TRE', ext: 'TRE', body: new Uint8Array(0x10) },
+      ],
+      'Synthetic',
+      { ownEntry: true },
+    )
+    const typBlock = img[entryOf(img, 'TYP') + 0x20] | (img[entryOf(img, 'TYP') + 0x21] << 8)
+    const cut = img.slice()
+    cut.fill(0, CUT, typBlock * ENTRY)
+    // Every byte from the cut is gone except the TYP subfile, so the bulk read comes back short.
+    const readAt = async (offset: number, length: number) =>
+      offset >= typBlock * ENTRY ? img.slice(offset, offset + length) : img.slice(offset, Math.min(offset + length, CUT))
+    const info = await readImgInfo(readAt)
+    expect(info.family).toEqual({ familyId: 7, source: 'TYP' })
+    expect(info.directoryComplete).toBe(false)
   })
 
   it('a directory with its own entry gives the same header info as without it', async () => {

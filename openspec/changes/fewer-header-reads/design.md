@@ -38,6 +38,13 @@ holding the header and directory themselves.
   `webusb-mtp` receives multi-packet data phases, and the app already sends multi-megabyte maps;
   reads of up to 64 KiB are assumed fine (owner's watch check after release).
 
+- **An own entry that overstates the directory can spend budget the old walk didn't**, so a later
+  MPS read may not fit and its family id or area names are lost (review finding). Results then
+  differ from the old walk, always toward "unknown" and so toward protected, never toward
+  deletable. Accepted: mkgmap's and a third-party map's own entries were exact; the spec promises
+  equivalence only when the size is right. Likewise, a first TYP that isn't a Garmin TYP uses the
+  room kept for one TYP header.
+
 ## Open Questions
 
 None.

@@ -44,11 +44,16 @@ class Budgeted {
   }
 
   async read(offset: number, length: number): Promise<Uint8Array> {
-    if (this.spent + length > this.budget) throw new BudgetSpent()
-    this.spent += length
-    const bytes = await this.readAt(offset, length)
+    const bytes = await this.readUpTo(offset, length)
     if (bytes.length < length) throw new Error(`short read at ${offset} (${bytes.length} of ${length} bytes)`)
     return bytes
+  }
+
+  // As read, but bytes that come back short are returned as they are.
+  async readUpTo(offset: number, length: number): Promise<Uint8Array> {
+    if (this.spent + length > this.budget) throw new BudgetSpent()
+    this.spent += length
+    return this.readAt(offset, length)
   }
 }
 
@@ -69,8 +74,10 @@ async function* directoryEntries(io: Budgeted, start: number, reserve: () => num
     if (offset + ENTRY_SIZE > chunkAt + chunk.length) {
       const room = Math.floor((io.left - reserve()) / ENTRY_SIZE) * ENTRY_SIZE
       const length = Math.max(ENTRY_SIZE, Math.min(until - offset, room))
-      chunk = await io.read(offset, length)
+      // A bulk read that comes back short gives the entries it holds before the short read fails.
+      chunk = length > ENTRY_SIZE ? await io.readUpTo(offset, length) : await io.read(offset, length)
       chunkAt = offset
+      if (chunk.length < ENTRY_SIZE) throw new Error(`short read at ${offset} (${chunk.length} of ${length} bytes)`)
     }
     const entry = chunk.subarray(offset - chunkAt, offset - chunkAt + ENTRY_SIZE)
     if (entry[0] !== 1) return
