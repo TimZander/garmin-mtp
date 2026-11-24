@@ -5,8 +5,7 @@ read is one GetPartialObject round trip, so a map with a large directory costs u
 trips (the 64 KiB budget), and a small mkgmap map about a dozen. An app that lists a watch's maps
 waits minutes for large Garmin maps. The bytes read are few; the round trips are the cost.
 
-An IMG's first directory entry describes the IMG's own header and directory: a blank name, part 0,
-and a size giving where the directory ends. Knowing that end, the rest of the directory can be
+An IMG's first directory entry describes the IMG's own header and directory: a blank name and a size giving where the directory ends. Knowing that end, the rest of the directory can be
 asked for in one read.
 
 ## What Changes

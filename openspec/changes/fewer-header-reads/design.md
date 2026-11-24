@@ -1,7 +1,7 @@
 ## Context
 
 See proposal.md. In the two mkgmap fixtures and in a large third-party map (527 entries, 8 KiB
-blocks) the first directory entry has an all-space name, part 0, and a size equal to the offset
+blocks) the first directory entry has an all-space name, part 3 (not 0), and a size equal to the offset
 where the directory's entries end. The IMG format's descriptions agree: that entry is the file
 holding the header and directory themselves.
 

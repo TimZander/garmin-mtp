@@ -206,6 +206,89 @@ describe('readImgInfo', () => {
   })
 })
 
+// Spec: img-headers, "The directory is read in few reads".
+describe('directory reads', () => {
+  // 200 entries: the fixture's own entry, its size patched to the end of 200 entries, then 199 RGN
+  // entries (no TYP, no MPS).
+  function hugeOwnDirectory(): Uint8Array {
+    const huge = hugeDirectory()
+    huge.set(fixture.subarray(DIR, DIR + ENTRY), DIR)
+    const size = DIR + 200 * ENTRY
+    huge.set([size & 0xff, (size >> 8) & 0xff, (size >> 16) & 0xff, size >>> 24], DIR + 0x0c)
+    return huge
+  }
+
+  it('an mkgmap map is read in at most 5 reads, with the same header info', async () => {
+    const MAX_READS = 5
+    const r = reader(fixture)
+    const info = await readImgInfo(r.readAt)
+    expect(r.reads()).toBeLessThanOrEqual(MAX_READS)
+    expect(info).toEqual({
+      family: { familyId: 4242, source: 'TYP' },
+      mapAreas: ['Area 42420002'],
+      description: 'Fixture Map',
+      mkgmapMps: true,
+      hasGmp: false,
+      directoryComplete: true,
+    })
+    const f = reader(fixture)
+    expect(await readImgFamilyId(f.readAt)).toEqual({ familyId: 4242, source: 'TYP' })
+    expect(f.reads()).toBeLessThanOrEqual(MAX_READS)
+  })
+
+  it('a 200-entry directory with its own entry: at most 4 reads within 64 KB, incomplete', async () => {
+    // Header, own entry, the bulk read, then the last entry the room kept for a TYP allows.
+    const MAX_READS = 4
+    const r = reader(hugeOwnDirectory())
+    const info = await readImgInfo(r.readAt)
+    expect(r.reads()).toBeLessThanOrEqual(MAX_READS)
+    expect(r.read()).toBeLessThanOrEqual(HEADER_READ_BUDGET)
+    expect(info.family).toEqual({ unknown: expect.stringMatching(/64 KB/) })
+    expect(info.directoryComplete).toBe(false)
+    const f = reader(hugeOwnDirectory())
+    expect(await readImgFamilyId(f.readAt)).toEqual({ unknown: expect.stringMatching(/64 KB/) })
+    expect(f.reads()).toBeLessThanOrEqual(MAX_READS)
+  })
+
+  it('a directory without its own entry is read one entry per read, as before', async () => {
+    const SUBFILES = 2
+    const img = buildImg([
+      { name: 'ONE', ext: 'TYP', body: typ(7) },
+      { name: 'MAKEGMAP', ext: 'MPS', body: mapRecord(7, 'Area') },
+    ])
+    const r = reader(img)
+    const info = await readImgInfo(r.readAt)
+    // Header, each entry, the end-of-directory entry, the TYP header, the MPS.
+    expect(r.reads()).toBe(1 + SUBFILES + 1 + 1 + 1)
+    expect(info).toMatchObject({ family: { familyId: 7, source: 'TYP' }, mapAreas: ['Area'], directoryComplete: true })
+  })
+
+  it('an entry past the size its own entry gives is still read: a GMP there counts', async () => {
+    const OWN_AND_TWO = 3
+    const img = buildImg(
+      [
+        { name: 'ONE', ext: 'TYP', body: typ(7) },
+        { name: 'MAKEGMAP', ext: 'MPS', body: mapRecord(7, 'Area') },
+        { name: 'NT', ext: 'GMP', body: new Uint8Array(0x10) },
+      ],
+      'Synthetic',
+      { ownEntry: true, ownSize: DIR + OWN_AND_TWO * ENTRY },
+    )
+    const info = await readImgInfo(reader(img).readAt)
+    expect(info.hasGmp).toBe(true)
+    expect(info.directoryComplete).toBe(true)
+  })
+
+  it('a directory with its own entry gives the same header info as without it', async () => {
+    const subfiles = [
+      { name: 'ONE', ext: 'TYP', body: typ(7) },
+      { name: 'MAKEGMAP', ext: 'MPS', body: mapRecord(7, 'Area') },
+    ]
+    const own = await readImgInfo(reader(buildImg(subfiles, 'Synthetic', { ownEntry: true })).readAt)
+    expect(own).toEqual(await readImgInfo(reader(buildImg(subfiles)).readAt))
+  })
+})
+
 describe('carriesMarker', () => {
   const info = (mapAreas: string[]): ImgInfo => ({
     family: { familyId: 1, source: 'TYP' },

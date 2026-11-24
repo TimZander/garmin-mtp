@@ -19,3 +19,5 @@ one. A superseded record stays, with its status set to `superseded by NNNN`.
 | [0011](0011-trusted-publisher-may-publish.md) | The trusted publisher may publish, not only stage | accepted |
 | [0012](0012-over-long-name-refused-up-front.md) | An over-long file name is refused up front, as `name-too-long` | proposed |
 | [0013](0013-how-refuse-over-long-names-was-run.md) | How refuse-over-long-names was run | accepted |
+| [0014](0014-directory-read-in-one-read.md) | A map's directory is read in one read, sized by the IMG's own entry | accepted |
+| [0015](0015-how-fewer-header-reads-was-run.md) | How fewer-header-reads was run | accepted |
