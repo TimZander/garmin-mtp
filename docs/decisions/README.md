@@ -21,3 +21,4 @@ one. A superseded record stays, with its status set to `superseded by NNNN`.
 | [0013](0013-how-refuse-over-long-names-was-run.md) | How refuse-over-long-names was run | accepted |
 | [0014](0014-directory-read-in-one-read.md) | A map's directory is read in one read, sized by the IMG's own entry | accepted |
 | [0015](0015-how-fewer-header-reads-was-run.md) | How fewer-header-reads was run | accepted |
+| [0016](0016-update-sdd-to-0-4-4.md) | Update sdd from 0.3.4 to 0.4.4 | accepted |
